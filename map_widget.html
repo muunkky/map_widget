@@ -1,0 +1,71 @@
+<script>
+  const imageUrl = 'https://lh3.googleusercontent.com/8aWWVAIbTr7EgIDQdyWsxNOKgDMkguFl-uZn70LMbFtAHnrzwMXDLA2f2ALOpyuZl0Cbm7h2nd4xUyJ6f354-aqfed7Ad4QF_CXIwCvkZ9rWt0Jb-owMs1z16x61ZwvJRA=w1280';
+  const API_KEY= 'AIzaSyBI90GBOe6w7jkbMdpIVMlH2owo5qDy5Go';
+  const SPREADSHEET_ID = '1W-2DvHw0ekdfr5hng2LKxgJe9O80sTjXH0Yrnbi15hU';
+
+  const imageOptions = { opacity: 1 };
+  var bounds = [
+      [0, 0],
+      [1, 1]
+    ];
+  const center = [bounds[1][0] / 2, bounds[1][1] / 2];
+  const map = L.map('map', { minZoom: 8, maxZoom: 14, crs: L.CRS.Simple, attributionControl: false }).setView(center, 8);
+  const markers = L.markerClusterGroup();
+
+  function initialize() {
+    const img = new Image();
+
+    img.onload = function() {
+      console.log(`Image dimensions: ${this.width} x ${this.height}`);
+      console.log(`Aspect Ratio: ${w/h}`);
+      bounds = [0, 0],[1, w/h]
+      main();
+    }
+    img.src = imageUrl;
+  }
+
+  function main() {
+    const publicSpreadsheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1?key=${API_KEY}`;
+    console.log(publicSpreadsheetUrl);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      opacity: 0,
+      attribution: "Map data © <a href='https://openstreetmap.org'>OpenStreetMap</a> contributors",
+    }).addTo(map);
+
+    L.control.mousePosition({
+      separator: ', ',
+      emptyString: 'Unknown',
+      lngFirst: true,
+      numDigits: 3,
+      lngFormatter: function(lng) {
+        return lng + '&deg;E';
+      },
+      latFormatter: function(lat) {
+        return lat + '&deg;N';
+      }
+    }).addTo(map);
+
+    Tabletop.init({
+      key: publicSpreadsheetUrl,
+      callback: function(data, tabletop) {
+        for (let i = 0; i < data.length; i++) {
+          const marker = L.marker([data[i].lat, data[i].lng]).addTo(map);
+          marker.bindPopup(data[i].name);
+        }
+      },
+      simpleSheet: true
+    });
+
+    map.on('click', function(e) {
+      console.log('You clicked the map at ' + e.latlng.toString());
+    });
+
+    L.imageOverlay(imageUrl, bounds, imageOptions).addTo(map);
+    map.fitBounds(bounds);
+  }
+
+  window.onload = function() {
+    initialize();
+  }
+</script>
